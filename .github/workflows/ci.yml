@@ -1,15 +1,12 @@
-﻿name: CI
+name: CI/CD DevOps
 
 on:
   push:
-    branches: [ "main" ]
-  pull_request:
-    branches: [ "main" ]
+    branches: ["main"]
 
 jobs:
   build:
     runs-on: ubuntu-latest
-
     steps:
       - uses: actions/checkout@v3
 
@@ -24,5 +21,24 @@ jobs:
       - name: Run tests
         run: npm test
 
+      # LOGIN DOCKER HUB
+      - name: Login to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      # CONSTRUIR IMAGEN DOCKER
       - name: Build Docker image
-        run: docker build -t hola-mundo-devops .
+        run: docker build -t ${{ secrets.DOCKER_USERNAME }}/hola-mundo-devops .
+
+      # SUBIR IMAGEN A DOCKER HUB
+      - name: Push Docker image
+        run: docker push ${{ secrets.DOCKER_USERNAME }}/hola-mundo-devops
+
+      # DEPLOY A RENDER
+      - name: Deploy to Render
+        run: |
+          curl -X POST "$RENDER_DEPLOY_HOOK"
+        env:
+          RENDER_DEPLOY_HOOK: ${{ secrets.RENDER_HOOK }}
